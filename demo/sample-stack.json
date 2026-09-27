@@ -1,10 +1,10 @@
 {
  "generator": "diffract",
  "schema": 1,
- "title": "Diffract stack map: monster-pr \u2014 Q2 CLI Improvements",
+ "title": "Diffract stack map: monster-pr into base-monster",
  "head": "monster-pr",
  "base": "base-monster",
- "summary": "This PR ships 7 Q2 CLI improvements to the click toolkit: tightened typing (R1), user-facing string localisation via gettext (R2), NoSuchCommand suggestions (R3), a new get_pager_file() API (R4), Linux prompt/hidden-input fixes (R5), Fish completion multi-line help (R6), and small targeted fixes (R7). The 96 units are stacked in dependency order \u2014 typing first, then features, then docs \u2014 so each slice can be reviewed and merged independently.",
+ "summary": "Thirteen merged click changes arrived as one 1,158-line branch. The stack follows the release plan: typing first so later slices read cleanly, then one slice per requirement, and the changelog last.",
  "original": {
   "lines": 1158,
   "files": 24,
@@ -14,77 +14,77 @@
  "slices": [
   {
    "number": 1,
-   "title": "Tighten Parameter/parser typing (mechanical \u2014 skim)",
+   "title": "Tighten Parameter, sentinel and parser typing",
    "requirement": "R1",
-   "lines": 212,
-   "mechanical_lines": 212,
+   "lines": 239,
+   "mechanical_lines": 239,
    "behavioral_lines": 0,
-   "files": 7,
-   "over_budget": false,
-   "status": "pass",
-   "flaky": false,
-   "branch": "diffract/monster-pr/01-tighten-parameter-parser-typing-mechanic",
-   "note": "100% mechanical \u2014 skim for unwanted behaviour changes in Parameter/Option/Argument type narrowing and ABC introduction"
-  },
-  {
-   "number": 2,
-   "title": "Add NoSuchCommand with name suggestions",
-   "requirement": "R3",
-   "lines": 119,
-   "mechanical_lines": 2,
-   "behavioral_lines": 117,
    "files": 6,
    "over_budget": false,
    "status": "pass",
    "flaky": false,
-   "branch": "diffract/monster-pr/02-add-nosuchcommand-with-name-suggestions",
-   "note": "Check _format_possibilities suggestion logic and Group.invoke NoSuchCommand wiring; tests included"
+   "branch": "diffract/monster-pr/01-tighten-parameter-sentinel-and-parser-ty",
+   "note": "Typing only. Skim; the one real change is Option names returning '' instead of None when not exposed."
   },
   {
-   "number": 3,
-   "title": "Localise remaining user-facing strings",
+   "number": 2,
+   "title": "Localise more user-facing strings",
    "requirement": "R2",
-   "lines": 76,
-   "mechanical_lines": 10,
-   "behavioral_lines": 66,
+   "lines": 70,
+   "mechanical_lines": 0,
+   "behavioral_lines": 70,
    "files": 9,
    "over_budget": false,
    "status": "pass",
    "flaky": false,
-   "branch": "diffract/monster-pr/03-localise-remaining-user-facing-strings",
-   "note": "66 behavioural lines, no tests \u2014 verify every string goes through _() and .format() parameters are correct"
+   "branch": "diffract/monster-pr/02-localise-more-user-facing-strings",
+   "note": "Strings now go through gettext. Check the progress-bar day label still formats correctly."
   },
   {
-   "number": 4,
-   "title": "Add click.get_pager_file() pager API",
-   "requirement": "R4",
-   "lines": 188,
-   "mechanical_lines": 5,
-   "behavioral_lines": 183,
-   "files": 2,
+   "number": 3,
+   "title": "Add NoSuchCommand with suggestions for misspelled commands",
+   "requirement": "R3",
+   "lines": 106,
+   "mechanical_lines": 0,
+   "behavioral_lines": 106,
+   "files": 6,
    "over_budget": false,
    "status": "pass",
    "flaky": false,
-   "branch": "diffract/monster-pr/04-add-click-get-pager-file-pager-api",
-   "note": "183 behavioural lines, no automated tests (pager tests excluded) \u2014 review MaybeStripAnsi, _pager_contextmanager, and get_pager_file() manually"
+   "branch": "diffract/monster-pr/03-add-nosuchcommand-with-suggestions-for-m",
+   "note": "New NoSuchCommand error. Check how close matches are ranked and that NoSuchOption shares the formatting."
+  },
+  {
+   "number": 4,
+   "title": "Add click.get_pager_file() and rework pager internals",
+   "requirement": "R4",
+   "lines": 210,
+   "mechanical_lines": 0,
+   "behavioral_lines": 210,
+   "files": 6,
+   "over_budget": false,
+   "status": "pass",
+   "flaky": false,
+   "branch": "diffract/monster-pr/04-add-click-get-pager-file-and-rework-page",
+   "note": "New get_pager_file() and a reworked pager pipeline. No tests in this PR: read _pipepager closely."
   },
   {
    "number": 5,
-   "title": "Fix Linux prompt input and hidden-input errors",
+   "title": "Fix readline prompts and hidden-input error messages",
    "requirement": "R5",
    "lines": 375,
-   "mechanical_lines": 3,
-   "behavioral_lines": 372,
+   "mechanical_lines": 0,
+   "behavioral_lines": 375,
    "files": 3,
    "over_budget": false,
    "status": "pass",
    "flaky": false,
-   "branch": "diffract/monster-pr/05-fix-linux-prompt-input-and-hidden-input",
-   "note": "Focus on _readline_prompt stdout/stderr redirect logic and _mask_hidden_input regex; 14 test cases included"
+   "branch": "diffract/monster-pr/05-fix-readline-prompts-and-hidden-input-er",
+   "note": "Prompt output now goes through readline-friendly writes; hidden-input errors show the custom message."
   },
   {
    "number": 6,
-   "title": "Fix Fish completion multi-line help strings",
+   "title": "Fix fish completion for multiline help strings",
    "requirement": "R6",
    "lines": 76,
    "mechanical_lines": 0,
@@ -93,45 +93,82 @@
    "over_budget": false,
    "status": "pass",
    "flaky": false,
-   "branch": "diffract/monster-pr/06-fix-fish-completion-multi-line-help-stri",
-   "note": "Small and well-tested: check the newline-split parsing change in the completion script path"
+   "branch": "diffract/monster-pr/06-fix-fish-completion-for-multiline-help-s",
+   "note": "Fish completion escapes multi-line help. Compare against the new test cases."
   },
   {
    "number": 7,
-   "title": "Docs, small fixes, and unrelated changes",
+   "title": "Fix FuncParamType error message and open_url on Windows",
    "requirement": "R7",
-   "lines": 112,
-   "mechanical_lines": 59,
+   "lines": 53,
+   "mechanical_lines": 0,
    "behavioral_lines": 53,
-   "files": 9,
+   "files": 3,
    "over_budget": false,
    "status": "pass",
    "flaky": false,
-   "branch": "diffract/monster-pr/07-docs-small-fixes-and-unrelated-changes",
-   "note": "Three R7 fixes are independent \u2014 can be pushed back separately; also contains unrelated .gitignore and File error reformat"
+   "branch": "diffract/monster-pr/07-fix-funcparamtype-error-message-and-open",
+   "note": "Two small fixes with a test for FuncParamType."
+  },
+  {
+   "number": 8,
+   "title": "Changelog and .gitignore",
+   "requirement": "",
+   "lines": 29,
+   "mechanical_lines": 29,
+   "behavioral_lines": 0,
+   "files": 2,
+   "over_budget": false,
+   "status": "pass",
+   "flaky": false,
+   "branch": "diffract/monster-pr/08-changelog-and-gitignore",
+   "note": "Changelog entries and one .gitignore line outside the plan."
   }
  ],
  "requirements_source": "q2-release-plan.docx",
  "gaps": [
-  "R4 changes 183 behavioural lines in slices 4, 7 with no test changes",
-  "R2 changes 66 behavioural lines in slice 3 with no test changes",
-  "R1 changes 17 behavioural lines in slices 1, 2 with no test changes"
+  "R4 changes 193 behavioural lines in slice 4 with no test changes",
+  "R2 changes 64 behavioural lines in slice 2 with no test changes"
  ],
  "timeline": [
   {
-   "seconds": 0.059036970138549805,
+   "seconds": 0.008413314819335938,
    "text": "Parsed 96 units in 24 files"
   },
   {
-   "seconds": 243.85903692245483,
-   "text": "Planned 7 slices (plan v1)"
+   "seconds": 0.008413314819335938,
+   "text": "Planned 9 slices (plan v1)"
   },
   {
-   "seconds": 350.85903692245483,
-   "text": "Tested 7 slices in parallel (51.9 s); all green"
+   "seconds": 4.708413362503052,
+   "text": "Checked the base: green"
   },
   {
-   "seconds": 391.55903697013855,
+   "seconds": 28.908413410186768,
+   "text": "Tested 9 slices (24.2 s); red: 3, 4, 5"
+  },
+  {
+   "seconds": 29.108413457870483,
+   "text": "Repair: moved h006, h060 into slice 3"
+  },
+  {
+   "seconds": 51.70841336250305,
+   "text": "Tested 3 slices (22.4 s), 6 reused from cache; red: 3, 4, 5"
+  },
+  {
+   "seconds": 72.3084135055542,
+   "text": "Probed slice 3 against 6 candidates: green with slice 6"
+  },
+  {
+   "seconds": 72.3084135055542,
+   "text": "Repair: merged slices 3 and 6"
+  },
+  {
+   "seconds": 75.90841341018677,
+   "text": "Tested 1 slice (3.4 s), 7 reused from cache; all green"
+  },
+  {
+   "seconds": 75.90841341018677,
    "text": "Proved zero drift"
   }
  ],
@@ -143,165 +180,186 @@
   "units_once": true,
   "zero_drift": true
  },
- "elapsed_minutes": 6.5,
- "repairs": 0,
- "verify_runs": 1,
+ "elapsed_minutes": 1.3,
+ "repairs": 2,
+ "verify_runs": 4,
  "verify_command": "PYTHONPATH=src ~/click-demo-venv/bin/python -m pytest -q -p no:cacheprovider -k \"not pager\"",
- "generated_at": "2026-09-27 11:59",
+ "generated_at": "2026-09-26 16:59",
  "requirements": [
   {
    "id": "R1",
-   "text": "Tighten typing of Parameter names, UNSET sentinel, option parser",
-   "status": "no test changes",
+   "text": "Tighten typing of Parameter names, the UNSET sentinel and the parser; no behaviour change",
+   "status": "mechanical only",
    "slices": [
-    1,
-    2
+    1
    ],
    "docs_slices": [
-    7
+    8
    ],
-   "code_units": "h008, h022, h026, h028, h031-h032, h034-h043, h045-h046, h050-h054, h057-h059, h062-h064, h066, h068, h071, h084",
+   "code_units": "h022, h026, h028, h031, h034-h043, h045-h047, h049-h054, h057-h058, h062-h064, h066, h068, h071, h082, h084",
    "test_units": "",
-   "docs_units": "h002",
-   "lines": 238,
-   "behavioral_lines": 17,
+   "docs_units": "h002-h003",
+   "lines": 267,
+   "behavioral_lines": 0,
    "per_slice": {
-    "7": [
-     "docs"
-    ],
     "1": [
      "code"
     ],
-    "2": [
-     "code"
+    "8": [
+     "docs"
     ]
    }
   },
   {
    "id": "R2",
-   "text": "Localise remaining user-facing strings via gettext",
+   "text": "Localise remaining user-facing strings",
    "status": "no test changes",
    "slices": [
-    3
+    2
    ],
    "docs_slices": [
-    7
+    8
    ],
-   "code_units": "h011, h023-h025, h029-h030, h047-h049, h055, h061, h065, h080, h082, h085-h087",
+   "code_units": "h011, h023-h025, h029-h030, h048, h055, h061, h065, h080, h083, h085-h087",
    "test_units": "",
-   "docs_units": "h003",
-   "lines": 95,
-   "behavioral_lines": 66,
+   "docs_units": "h002-h003",
+   "lines": 92,
+   "behavioral_lines": 64,
    "per_slice": {
-    "7": [
-     "docs"
-    ],
-    "3": [
+    "2": [
      "code"
+    ],
+    "8": [
+     "docs"
     ]
    }
   },
   {
    "id": "R3",
-   "text": "NoSuchCommand error with name suggestions; unknown options same format",
+   "text": "NoSuchCommand error with suggestions for mistyped subcommands",
    "status": "code + tests",
    "slices": [
-    2
+    3
    ],
-   "docs_slices": [],
-   "code_units": "h006, h027, h033, h056, h060, h067",
+   "docs_slices": [
+    8
+   ],
+   "code_units": "h006, h027, h032-h033, h056, h059-h060, h067",
    "test_units": "h088-h089",
-   "docs_units": "",
-   "lines": 102,
-   "behavioral_lines": 60,
+   "docs_units": "h002-h003",
+   "lines": 134,
+   "behavioral_lines": 66,
    "per_slice": {
-    "2": [
+    "3": [
      "code",
      "tests"
+    ],
+    "8": [
+     "docs"
     ]
    }
   },
   {
    "id": "R4",
-   "text": "Add click.get_pager_file() file-like pager API",
+   "text": "File-like pager API: click.get_pager_file()",
    "status": "no test changes",
    "slices": [
-    4,
-    7
+    4
    ],
-   "docs_slices": [],
-   "code_units": "h007, h009-h010, h012-h020, h077-h079",
+   "docs_slices": [
+    8
+   ],
+   "code_units": "h007-h010, h012-h020, h077-h079",
    "test_units": "",
-   "docs_units": "h004-h005",
-   "lines": 206,
-   "behavioral_lines": 183,
+   "docs_units": "h002-h005",
+   "lines": 238,
+   "behavioral_lines": 193,
    "per_slice": {
-    "7": [
+    "4": [
      "code",
      "docs"
     ],
-    "4": [
-     "code"
+    "8": [
+     "docs"
     ]
    }
   },
   {
    "id": "R5",
-   "text": "Fix Linux prompt input; custom error for hidden-input prompts",
+   "text": "Fix readline prompt input; custom errors for hidden-input prompts",
    "status": "code + tests",
    "slices": [
     5
    ],
-   "docs_slices": [],
+   "docs_slices": [
+    8
+   ],
    "code_units": "h072-h076",
    "test_units": "h092, h094-h096",
-   "docs_units": "",
-   "lines": 375,
-   "behavioral_lines": 61,
+   "docs_units": "h002-h003",
+   "lines": 403,
+   "behavioral_lines": 64,
    "per_slice": {
     "5": [
      "code",
      "tests"
+    ],
+    "8": [
+     "docs"
     ]
    }
   },
   {
    "id": "R6",
-   "text": "Fish shell completion handles multi-line help strings",
+   "text": "Fish completion handles multi-line help strings",
    "status": "code + tests",
    "slices": [
     6
    ],
-   "docs_slices": [],
+   "docs_slices": [
+    8
+   ],
    "code_units": "h069-h070",
    "test_units": "h090-h091",
-   "docs_units": "",
-   "lines": 76,
+   "docs_units": "h002-h003",
+   "lines": 104,
    "behavioral_lines": 23,
    "per_slice": {
     "6": [
      "code",
      "tests"
+    ],
+    "8": [
+     "docs"
     ]
    }
   },
   {
    "id": "R7",
-   "text": "Small fixes: FuncParamType ValueError, Windows open_url, deprecation label",
+   "text": "Small fixes: FuncParamType message, open_url on Windows, deprecation label spacing",
    "status": "code + tests",
    "slices": [
+    2,
     7
    ],
-   "docs_slices": [],
+   "docs_slices": [
+    8
+   ],
    "code_units": "h021, h044, h081",
    "test_units": "h093",
-   "docs_units": "",
-   "lines": 59,
-   "behavioral_lines": 34,
+   "docs_units": "h002-h003",
+   "lines": 87,
+   "behavioral_lines": 40,
    "per_slice": {
     "7": [
      "code",
      "tests"
+    ],
+    "2": [
+     "code"
+    ],
+    "8": [
+     "docs"
     ]
    }
   }

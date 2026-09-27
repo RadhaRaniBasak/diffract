@@ -1,8 +1,8 @@
 # Demo guide
 
-How to reproduce the Diffract demo: 13 real pull requests from pallets/click, squashed into one
-branch and split live in IBM Bob. Bob's plan can differ from run to run, so your numbers may too.
-The invariants hold whatever the plan: every slice green, zero drift.
+Everything below was dry-run end to end: the engine was driven over real MCP stdio, the way Bob
+calls it, on a freshly cloned repo. Bob's own plan may differ from ours, so your numbers can too.
+The invariants must hold whatever the plan: every slice green, zero drift.
 
 ## The branch: 13 real PRs, squashed
 
@@ -38,13 +38,13 @@ The script does four things:
 3. creates `~/click-demo-venv` with pytest 9.0.2;
 4. runs the suite once and prints the verify command for Bob.
 
-On Windows, run `powershell -ExecutionPolicy Bypass -File demo\setup_click_demo.ps1` instead. This script hasn't been tested on a real Windows machine yet.
+On Windows, run `powershell -ExecutionPolicy Bypass -File demo\setup_click_demo.ps1` instead. It hasn't been run on a real Windows machine yet, so allow a few minutes to fix anything it trips on.
 
 Why the verify command looks the way it does:
 - **pytest 9.0.2** is the version click's lockfile pins at this point. Other versions trip click's
   strict warnings-as-errors settings.
 - **`-k "not pager"`** excludes the pager tests. They are environment-sensitive and crashed in our
-  Linux test environment. Diffract flags the pager changes as untested, so review them by hand.
+  Linux sandbox. Say this in the video: it's honest, and it shows you understand your verify command.
 - **`PYTHONPATH=src` is an environment variable** because `test_imports.py` starts a separate
   Python process that must import the slice's code.
 
@@ -60,17 +60,18 @@ Verify with: PYTHONPATH=src /ABSOLUTE/PATH/click-demo-venv/bin/python -m pytest 
 
 | Scenario | Result |
 |---|---|
-| **Live run in IBM Bob** (MacBook Air) | 7 slices, all green on the first test run, 0 repairs, zero drift. Largest slice **375 of 1,158 lines** (3.1× smaller). Testing all 7 in parallel took 51.9 s, against 183 s one by one; 6.5 minutes from start to proof. The stack-tip tree `fa953095f201` equals the branch head. |
-| **Engine test: a plan with a realistic mistake** (NoSuchCommand wired into `Group` before the exception class exists; Linux, one CPU) | **Round 1:** 3 red slices. The engine's `suggested_repair` moved the class definition and its import (2 units, 45 lines) into the red slice. **Round 2:** one failing assertion gave no clue, so `probe` tried 6 candidate fixes in parallel; exactly one turned green, and the plan merged it. **Round 3:** only one slice re-ran (the rest came from cache). All green, with the same 8 slices that engine test started from. |
-| **Engine test, hard case:** real PR #3030 (1,978 lines, one indivisible behaviour change) | 6 slices, all green, zero drift, after **2 automatic repair rounds** (suggested moves only). The core stays 1,335 lines because it rewrites ~800 lines of existing test expectations. Diffract keeps it together instead of faking a split. A flaky pager test was caught by the automatic retry, not "repaired". |
-| **Requirement coverage** | With the .docx loaded, Diffract flags **R4, the new `get_pager_file()` API: 183 behavioural lines with no test changes**. That's a real gap: the next day, click merged a follow-up PR (#3405) adding 228 lines of tests and changing 36 lines of the pager code. |
-| **Stack map** | `.diffract/report.html`: one self-contained file. See `demo/sample-report.html`, generated from the live IBM Bob run (open it in a browser; it also has a dark mode). |
-| **Speed** | Parsing the diff and building every slice's branch takes about a second. A test run of click's suite took about 26 s on the MacBook Air and about 3.5 s on our Linux machine, which is why testing slices in parallel matters. |
+| **Sensible plan** (by requirement) | 8 slices, all green on the first verify, zero drift. Largest slice **375 of 1,158 lines** (3.1× smaller). The stack-tip tree was `fa953095f201`, identical to the branch head, on every run. |
+| **Plan with a realistic mistake** (NoSuchCommand wired into `Group` before the exception class exists) | **Round 1:** 3 red slices. The engine's `suggested_repair` moved the class definition and its import (2 units, 45 lines) into the red slice. **Round 2:** one failing assertion gave no clue, so `probe` tried 6 candidate fixes in parallel; exactly one turned green, and the plan merged it. **Round 3:** only one slice re-ran (the rest came from cache). All green; same 8 slices. |
+| **Hard case:** real PR #3030 (1,978 lines, one indivisible behaviour change) | 6 slices, all green, zero drift, after **2 automatic repair rounds** (suggested moves only). The core stays 1,335 lines because it rewrites ~800 lines of existing test expectations. Diffract keeps it together instead of faking a split. A flaky pager test was caught by the automatic retry, not "repaired". |
+| **Requirement coverage** | With the .docx loaded, Diffract flags **R4, the new `get_pager_file()` API: 193 behavioural lines with no test changes**. That's a real gap: the next day, click merged a follow-up PR (#3405) adding 228 lines of tests and changing 36 lines of the pager code. Use this as your "measurable impact" moment. |
+| **Stack map** | `.diffract/report.html`: 20 KB, one self-contained file. See `demo/sample-report.html`, generated from this run (open it in a browser; it also has a dark mode). |
+| **Engine speed** | Diff parsing plus building 8 branches and worktrees: about 1 second. Each test run: about 3.5 s. |
+| **Parallel verify** | Our sandbox had 1 CPU, so the 8 runs went one after another (about 35 s). On a multi-core laptop they run concurrently. |
 
-### Optional: the hard case, with automatic repairs
+### Optional: the hard case for guaranteed repair footage
 
-PR #3030 triggers the automatic repair loop every time, so it's a reliable way to watch the
-"red slice → diagnosis → green" cycle. Clean up the first session before starting this one.
+PR #3030 triggers the automatic repair loop every time, which makes it reliable footage for the
+"red slice → diagnosis → green" moment. Clean up the first session before starting this one.
 
 ```bash
 cd ~/click-demo
@@ -92,3 +93,40 @@ gh repo set-default <you>/click
 
 Then ask Bob to publish to the remote `fork`. It runs `publish(dry_run=True, remote="fork")` first
 and waits for your yes.
+
+## Video script (3:00)
+
+| Time | On screen | Say |
+|---|---|---|
+| 0:00–0:15 | The 1,158-line branch diff | "Nobody reviews this properly. Review studies find defect detection falls off sharply beyond a few hundred lines. So big PRs get skimmed and approved." |
+| 0:15–0:35 | Bob, Agent mode, typing the `/diffract` prompt; the .docx | "Diffract is a Bob skill plus an MCP engine. It turns one monster PR into a stack of small PRs that each pass the tests, and proves nothing was lost." |
+| 0:35–1:00 | Parallel subagents panel mapping the batches; R1–R7 pulled from the .docx; the gap message | "Bob reads the requirements doc and fans out explore subagents to classify every hunk. Diffract already found something: R4, a brand-new public API, ships with no test changes. The click maintainers had to add those tests in a follow-up PR the next day." |
+| 1:00–1:20 | Plan table with R-ids and an "Unrelated changes" slice; approve | "Every slice maps to a requirement. Anything that maps to none, like this .gitignore change, is isolated." |
+| 1:20–1:55 | `verify` running all slices at once; a red slice → `suggested_repair` / `probe` → green (hard-case clip if needed) | "Each slice builds in its own worktree and runs the real test suite in parallel. When one fails, the engine reads the log, finds the missing hunk and moves it. Cached slices don't even re-run." |
+| 1:55–2:15 | `ZERO DRIFT` statement, then the stack map: prism, requirements grid, repair timeline | "The stack tip is byte-identical to the original branch, so no line was lost or changed. Every number on this page comes from git; only the notes come from Bob." |
+| 2:15–2:40 | The stacked PRs on GitHub, zooming in on the green `diffract/zero-drift` and `diffract/tests` checks. If you set up the Action, cut briefly to its comment on a test PR | "One approval later, reviewers get eight PRs in merge order, each small enough for one sitting, and each carries its proof in GitHub's own checks. The same engine also runs on every pull request as a GitHub Action." |
+| 2:40–3:00 | Numbers slide + architecture | "1,158 lines → largest slice 375. Eight green slices, zero drift, in {minutes from `status()`} minutes. Diffract: review the change, not the monster." |
+
+## Recording checklist
+
+- **Rehearse once**, then reset with `cleanup(delete_branches=true, delete_session=true)`.
+- **Auto-approve** subagent spawns and every Diffract tool except `publish` and `cleanup`.
+- **Plug in the laptop and close heavy apps:** the parallel test runs need the cores.
+- **Enlarge Bob's font or zoom** so the tables read on video.
+- **Record in real time** and cut the waits in editing. Show the real elapsed minutes from `status()` so the speed claim stays honest.
+- **Keep `.diffract/report.html` open** in a browser tab, ready for the proof shot.
+- **Optional extra beat (15 s):** on the website's "Preview a split" page, paste any public PR link to show a live preview. Then open your run's `.diffract/stack.json` to show the verified version. Host the site on GitHub Pages for this, because the claude.ai copy can't reach GitHub.
+- **Cover image:** `demo/cover.png` (1920×1080, the prism in dark mode) is ready to upload. For your own run, switch your OS to dark mode and screenshot the top of your report.
+
+## Submission checklist
+
+These are lablab's usual fields; confirm them on the event page.
+- title and one-liner;
+- long description;
+- cover image;
+- video link;
+- slide deck;
+- public GitHub repo;
+- demo link: the fork's PR stack or the report.
+
+Submissions close **Sunday 27 September 2026, 15:00 UTC (8:30 pm IST)**.
