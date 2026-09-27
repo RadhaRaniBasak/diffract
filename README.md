@@ -1,8 +1,12 @@
 # Diffract
 
 **One monster PR in → a stack of small, green, provably complete PRs out.**
+
 **Live site:** https://diffract-demo.netlify.app 
+
 **Demo video:** (link)
+
+
 Diffract is an IBM Bob skill plus an MCP server. The split between them is the design:
 **numbers come from git, words come from Bob.**
 
