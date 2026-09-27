@@ -626,15 +626,15 @@ jobs:
 <div data-view="terms" hidden>
   <article class="wrap page prose">
     <h1 tabindex="-1">Terms of Service</h1>
-    <p class="updated">Last updated: <span class="todo">[date of publication]</span></p>
-    <p class="draft-note">Draft for review. These terms have not been reviewed by a lawyer. Items in brackets need a decision from the maintainers before this page is published.</p>
+    <p class="updated">Last updated: 27 September 2026</p>
+    <p class="draft-note">Plain-language terms for a hackathon project. They have not been reviewed by a lawyer.</p>
 
     <h2>This website</h2>
     <p>This website describes the Diffract project and shows results recorded while testing it.</p>
 
     <h2>The software</h2>
-    <p>Diffract is a skill and MCP server for IBM Bob, built for the IBM Bob 2.0 Hackathon by <span class="todo">[team name]</span>.</p>
-    <p><span class="todo">[License: the maintainers have not chosen a license yet. Add one to the repository and summarise it here.]</span></p>
+    <p>Diffract is a skill and MCP server for IBM Bob, built for the IBM Bob 2.0 Hackathon.</p>
+    <p>The source code is available in the project's repository. Check the repository for its license before reusing the code.</p>
 
     <h2>Your responsibilities</h2>
     <ul>
@@ -649,26 +649,25 @@ jobs:
     <p>IBM Bob, GitHub and any AI model provider you use with them are covered by their own terms.</p>
 
     <h2>Warranty and liability</h2>
-    <p><span class="todo">[To be written by the maintainers.]</span></p>
+    <p>Diffract is a hackathon project, provided as is, without warranty of any kind. Review every slice and pull request before you merge it. The authors are not liable for any loss or damage that comes from using it.</p>
 
     <h2>Contact</h2>
-    <p><span class="todo">[Contact email address]</span></p>
+    <p>For questions or requests, <a data-repo-issues href="https://github.com/RadhaRaniBasak/diffract/issues">open an issue in the project's repository</a>.</p>
   </article>
 </div>
 
 <div data-view="privacy" hidden>
   <article class="wrap page prose">
     <h1 tabindex="-1">Privacy Policy</h1>
-    <p class="updated">Last updated: <span class="todo">[date of publication]</span></p>
-    <p class="draft-note">Draft for review. This policy describes how the website and the software work today. Items in brackets need a decision from the maintainers before this page is published.</p>
-
+    <p class="updated">Last updated: 27 September 2026</p>
+    
     <h2>Who this covers</h2>
-    <p>This policy covers the Diffract website and the Diffract software, a hackathon project by <span class="todo">[team name]</span>. Contact: <span class="todo">[email address]</span>.</p>
+    <p>This policy covers the Diffract website and the Diffract software, a hackathon project. For questions or requests, <a data-repo-issues href="https://github.com/RadhaRaniBasak/diffract/issues">open an issue in the project's repository</a>.</p>
 
     <h2>This website</h2>
     <p>This website is a single static page. It sets no cookies, runs no analytics, and loads no fonts, scripts or images from other servers. The images and the sample report are embedded in the page itself.</p>
     <p>When you use Preview a split with a pull request or merge request link, your browser requests that change's public data directly from GitHub or GitLab. Their privacy policies apply to those requests. Diffs you paste and run files you open are processed in your browser and are never uploaded.</p>
-    <p>The service that hosts the page may record technical information, such as your IP address, when you load it. <span class="todo">[Name the hosting provider and link to its privacy policy.]</span></p>
+    <p>The service that hosts the page may record technical information, such as your IP address, when you load it.</p>
 
     <h2>The Diffract software</h2>
     <p>Diffract runs on your own computer. It reads the git repository you point it at and writes working files in two places: a <code>.diffract</code> folder inside that repository, and git worktrees under <code>~/.cache/diffract</code> or the folder set in <code>DIFFRACT_WORKTREE_ROOT</code>.</p>
@@ -681,7 +680,7 @@ jobs:
     </ul>
 
     <h2>Changes to this policy</h2>
-    <p><span class="todo">[Describe how changes will be announced.]</span></p>
+    <p>If this policy changes, the new version will be posted on this page with a new date.</p>
   </article>
 </div>
 
@@ -768,7 +767,7 @@ jobs:
 </footer>
 
 <script>
-const SITE = { repoUrl: "", videoUrl: "" };
+const SITE = { repoUrl: "https://github.com/RadhaRaniBasak/diffract", videoUrl: "" };
 
 const header = document.querySelector(".site-header");
 const menuButton = document.querySelector(".menu-toggle");
@@ -786,6 +785,7 @@ if (SITE.repoUrl) {
   document.querySelectorAll("[data-clone-line]").forEach((line) => { line.textContent = `git clone ${SITE.repoUrl} diffract`; });
   document.querySelectorAll("[data-when-no-repo]").forEach((note) => note.remove());
   document.querySelectorAll("[data-repo-link]").forEach((link) => { link.href = SITE.repoUrl; link.hidden = false; });
+  document.querySelectorAll("[data-repo-issues]").forEach((link) => { link.href = SITE.repoUrl.replace(/\/$/, "") + "/issues"; });
   const owner = SITE.repoUrl.match(/github\.com\/([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/i);
   if (owner) document.querySelectorAll("[data-action-uses]").forEach((node) => { node.textContent = owner[1]; });
 }
