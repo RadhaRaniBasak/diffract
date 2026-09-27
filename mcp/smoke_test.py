@@ -429,7 +429,8 @@ async def mcp_roundtrip() -> None:
             tools = await session.list_tools()
             names = sorted(t.name for t in tools.tools)
             expected = {"start_session", "set_requirements", "show_units", "annotate_units", "set_plan", "move_units",
-                        "merge_slices", "verify", "locate", "probe", "drift_check", "status", "report", "publish", "cleanup"}
+                        "merge_slices", "verify", "locate", "probe", "drift_check", "status", "report", "publish", "cleanup",
+                        "facts"}
             check(set(names) == expected, f"server lists all {len(names)} tools over stdio")
             res = await session.call_tool("status", {"repo_path": str(REPO)})
             flag = getattr(res, "isError", getattr(res, "is_error", False))

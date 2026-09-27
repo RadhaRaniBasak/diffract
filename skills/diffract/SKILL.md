@@ -90,6 +90,13 @@ Collect the one-line-per-unit results and call `annotate_units` once with all of
 example: "R4 changes 193 behavioural lines with no test changes." Diffract never adds tests: it
 surfaces the gap so reviewers can ask for them.
 
+### Step 2b — Check factual claims
+
+If the user gave a pull request description or an agent's report, list its factual claims (for
+example: no API changes, only touched X, tests unchanged, all tests pass), call `facts`, and mark
+each claim as **holds**, **does not hold**, or **can't tell**, citing the fact that decides it.
+Put claims that don't hold in the report summary, and warn about any `weakened_units`.
+
 ### Step 3 — Plan the stack, then get approval
 
 Follow `references/slicing-policy.md`. In short:

@@ -24,7 +24,7 @@ Diffract is an IBM Bob skill plus an MCP server. The split between them is the d
 ```
 skills/diffract/SKILL.md          the Bob skill (procedure + invariants)
 skills/diffract/references/       slicing policy, subagent prompts, PR template, verification tips
-mcp/diffract_mcp.py               MCP server, 15 tools, stdio
+mcp/diffract_mcp.py               MCP server, 16 tools, stdio
 mcp/diffract_report.py            renders the stack map (self-contained HTML)
 mcp/diffract_auto.py              automatic mode: rule-based plan, tested and repaired, no Bob needed
 action.yml                        GitHub Action that runs automatic mode on pull requests (beta)

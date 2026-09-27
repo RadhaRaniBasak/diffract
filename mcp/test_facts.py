@@ -91,8 +91,6 @@ def _build_repo(tmp: Path) -> Path:
 # Fixture: isolated diffract_mcp module loaded once per test session
 # ---------------------------------------------------------------------------
 
-import importlib
-import types
 
 
 def _load_module(tmp: Path):

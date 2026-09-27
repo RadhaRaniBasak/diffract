@@ -18,6 +18,7 @@
         "probe",
         "locate",
         "drift_check",
+        "facts",
         "status",
         "report"
       ],

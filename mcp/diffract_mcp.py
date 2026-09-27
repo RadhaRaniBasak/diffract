@@ -42,6 +42,8 @@ DEFAULT_BUDGET_EXCLUDE = [
     "*Gemfile.lock", "*.snap", "*.min.js", "*.min.css",
 ]
 LOCKFILES = {Path(p.lstrip("*")).name.lower() for p in DEFAULT_BUDGET_EXCLUDE if "lock" in p or p.endswith("go.sum")}
+MANIFESTS = {"package.json", "pyproject.toml", "requirements.txt", "setup.py", "setup.cfg", "go.mod", "cargo.toml",
+             "composer.json", "gemfile", "pom.xml", "build.gradle", "build.gradle.kts", "tsconfig.json"}
 TEST_PATH_RE = re.compile(
     r"(^|/)(tests?|__tests__|specs?|testing)/|(^|/)test_[^/]*\.py$|_test\.(py|go|rb)$"
     r"|\.(test|spec)\.[^/]+$"
@@ -2003,6 +2005,126 @@ def report(
                         f"zero drift: {view['proof']['zero_drift']}",
             "stack_json": str(run_file),
             "worth_a_look": view["gaps"] + [f"slice {i['number']} flaky" for i in view["slices"] if i["flaky"]]}
+
+
+ASSERTION_RE = re.compile(
+    r"^[+-][ \t]*(?:assert\b|self\.assert\w|pytest\.raises\b|expect\(|assertEquals\b|require\.\w|t\.Error\b|t\.Fatal\b)"
+)
+DEF_LINE_RE = re.compile(r"^[+-][ \t]*(?:def |class |export |function |public )")
+
+
+@server.tool()
+def facts(repo_path: RepoPath = None) -> dict[str, Any]:
+    """Return verifiable facts about the current session for claim-checking.
+
+    Use this to test whether an agent's or author's claims about a pull request
+    are supported by evidence before accepting them.  No model calls, no network;
+    every number comes from git and the session.
+
+    Returns:
+      areas          - for each top-level folder (or "." for root files): the number
+                       of changed files and total budgeted lines.
+      tests          - each changed test file with assertion lines added/removed
+                       (lines starting with assert, self.assert*, pytest.raises,
+                       expect(, assertEquals, require.*, t.Error, t.Fatal).
+                       weakened_units: hunk unit ids where removed assertions > added.
+      dependencies   - changed lockfiles (role == lockfile) and manifests (name in
+                       MANIFESTS or matches a budget-exclude glob).
+      api_surface    - for each non-test source file: added and removed top-level
+                       definition lines (def , class , export , function , public ).
+      totals         - files, units, budgeted lines; behavioural/mechanical lines
+                       when annotate_units has been called.
+    """
+    root = _root(repo_path)
+    s = _load(root)
+    units = s["units"]
+    files = s["files"]
+    ann = s.get("annotations", {})
+
+    # --- areas ---------------------------------------------------------------
+    area_files: dict[str, int] = {}
+    area_lines: dict[str, int] = {}
+    for path, finfo in files.items():
+        top = path.split("/")[0] if "/" in path else "."
+        area_files[top] = area_files.get(top, 0) + 1
+        area_lines[top] = area_lines.get(top, 0) + sum(units[u]["lines"] for u in finfo["units"])
+    areas = [{"folder": k, "files": area_files[k], "lines": area_lines[k]}
+             for k in sorted(area_files)]
+
+    # --- tests ---------------------------------------------------------------
+    test_entries = []
+    weakened_units: list[str] = []
+    for uid in s["unit_order"]:
+        u = units[uid]
+        if u["kind"] != "hunk":
+            continue
+        if not (TEST_PATH_RE.search(u["path"].lower()) or JVM_TEST_RE.search(u["path"])):
+            continue
+        added_a = sum(1 for line in u["diff"].splitlines() if line.startswith("+") and ASSERTION_RE.match(line))
+        removed_a = sum(1 for line in u["diff"].splitlines() if line.startswith("-") and ASSERTION_RE.match(line))
+        if added_a or removed_a:
+            test_entries.append({"unit": uid, "path": u["path"], "assertions_added": added_a, "assertions_removed": removed_a})
+        if removed_a > added_a:
+            weakened_units.append(uid)
+
+    # aggregate per file for the summary list
+    file_assertions: dict[str, dict[str, int]] = {}
+    for entry in test_entries:
+        row = file_assertions.setdefault(entry["path"], {"assertions_added": 0, "assertions_removed": 0})
+        row["assertions_added"] += entry["assertions_added"]
+        row["assertions_removed"] += entry["assertions_removed"]
+    tests_out = [{"path": p, **v} for p, v in sorted(file_assertions.items())]
+
+    # --- dependencies --------------------------------------------------------
+    dep_list = []
+    budget_exclude = s["config"]["budget_exclude"]
+    for path, finfo in sorted(files.items()):
+        name = path.rsplit("/", 1)[-1].lower()
+        is_lockfile = name in LOCKFILES
+        is_manifest = name in {m.lower() for m in MANIFESTS}
+        is_excluded = any(fnmatch.fnmatchcase(path, pat) for pat in budget_exclude)
+        if is_lockfile or is_manifest or is_excluded:
+            role = "lockfile" if is_lockfile else "manifest"
+            dep_list.append({"path": path, "role": role,
+                             "added": finfo["added"], "removed": finfo["removed"]})
+
+    # --- api_surface ---------------------------------------------------------
+    api_out = []
+    for path, finfo in sorted(files.items()):
+        if finfo["binary"]:
+            continue
+        if TEST_PATH_RE.search(path.lower()) or JVM_TEST_RE.search(path):
+            continue
+        if path.lower().endswith((".md", ".rst", ".txt", ".adoc")):
+            continue
+        defs_added = defs_removed = 0
+        for uid in finfo["units"]:
+            u = units[uid]
+            if u["kind"] != "hunk":
+                continue
+            for line in u["diff"].splitlines():
+                if DEF_LINE_RE.match(line):
+                    if line.startswith("+"):
+                        defs_added += 1
+                    elif line.startswith("-"):
+                        defs_removed += 1
+        if defs_added or defs_removed:
+            api_out.append({"path": path, "definitions_added": defs_added, "definitions_removed": defs_removed})
+
+    # --- totals --------------------------------------------------------------
+    total_lines = sum(u["lines"] for u in units.values())
+    totals: dict[str, Any] = {"files": len(files), "units": len(units), "budgeted_lines": total_lines}
+    if ann:
+        totals["behavioural_lines"] = sum(units[u]["lines"] for u, a in ann.items() if a["kind"] == "behavioral")
+        totals["mechanical_lines"] = sum(units[u]["lines"] for u, a in ann.items() if a["kind"] == "mechanical")
+
+    return {
+        "areas": areas,
+        "tests": {"files": tests_out, "weakened_units": weakened_units},
+        "dependencies": dep_list,
+        "api_surface": api_out,
+        "totals": totals,
+    }
 
 
 @server.tool()
