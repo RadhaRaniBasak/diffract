@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffract stack map: monster-pr — Q2 CLI Improvements</title>
+<style>
+:root { --ink:#14213d; --paper:#f6f7fb; --panel:#ffffff; --muted:#5b6479; --rule:#d5dae5;
+        --pass:#1f7a50; --fail:#b8322a; --warn:#9a6414; --glass:rgba(120,140,190,.16); }
+@media (prefers-color-scheme: dark) {
+  :root { --ink:#e6e9f2; --paper:#0f1424; --panel:#151c30; --muted:#9aa3b8; --rule:#2a3350;
+          --pass:#4cc38a; --fail:#f07469; --warn:#e3a94f; --glass:rgba(160,180,230,.14); } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink);
+       font:16px/1.55 "Avenir Next","Segoe UI","Helvetica Neue",system-ui,sans-serif; }
+main { max-width:1080px; margin:0 auto; padding:48px 24px 64px; }
+h1 { font-size:2.2rem; line-height:1.15; letter-spacing:-.015em; margin:0 0 14px; max-width:28ch; }
+h2 { font-size:1.3rem; margin:52px 0 12px; }
+p { max-width:72ch; }
+.verdict { font-size:1.15rem; margin:0 0 6px; }
+.summary { color:var(--muted); }
+.quiet { color:var(--muted); font-size:.95rem; }
+.prism { width:100%; height:auto; margin:28px 0 8px; }
+.beam { fill:var(--ink); opacity:.9; }
+.beam-label { font-size:18px; font-weight:700; fill:var(--ink); }
+.beam-sub, .ray-sub { font-size:13px; fill:var(--muted); }
+.ray-title { font-size:15px; fill:var(--ink); }
+.ray-number { font-weight:800; }
+.glass { fill:var(--glass); stroke:var(--ink); stroke-width:2; }
+.prism-compact, .ray-list { display:none; }
+.prism-compact { width:100%; height:auto; margin:24px 0 4px; }
+.ray-number-compact { font-size:30px; font-weight:800; fill:var(--ink); }
+.ray-list { list-style:none; padding:0; margin:0 0 8px; }
+.ray-list li { display:flex; gap:12px; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--rule); }
+.ray-list .dot { flex:none; width:12px; height:12px; border-radius:50%; transform:translateY(1px); }
+.ray-list .quiet { font-size:.92rem; }
+@media (max-width:640px) { .prism { display:none; } .prism-compact { display:block; } .ray-list { display:block; } }
+tspan.pass { fill:var(--pass); } tspan.warn { fill:var(--warn); } tspan.fail { fill:var(--fail); }
+.pass { color:var(--pass); } .warn { color:var(--warn); } .fail { color:var(--fail); } .muted { color:var(--muted); }
+.look { padding-left:1.2em; margin:0; } .look li { margin:6px 0; max-width:72ch; }
+.scroll { overflow-x:auto; }
+.scroll:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+table { border-collapse:collapse; width:100%; background:var(--panel); }
+th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--rule); vertical-align:top; }
+thead th { font-size:.9rem; color:var(--muted); font-weight:600; }
+.num { text-align:center; font-variant-numeric:tabular-nums; }
+.grid thead th.num { border-top:4px solid; }
+.grid td.num { font-size:1.1rem; }
+.grid td.docs { color:var(--muted); }
+.grid sub { font-size:.65rem; font-weight:700; }
+.rid { font-weight:700; margin-right:.3em; }
+.grid tbody th { font-weight:400; }
+.slices td.num { white-space:nowrap; }
+.swatch { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; }
+.note { margin:4px 0 0; color:var(--muted); font-size:.95rem; }
+.branch { display:block; margin-top:4px; font-size:.8rem; color:var(--muted); }
+.size { min-width:200px; }
+.count { font-variant-numeric:tabular-nums; font-weight:600; }
+.bar { position:relative; display:flex; height:10px; margin-top:6px; background:var(--rule); border-radius:5px; }
+.bar span { display:block; height:100%; }
+.bar span:first-child { border-radius:5px 0 0 5px; }
+.bar .unsorted { background:var(--muted); opacity:.35; }
+.bar .budget { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); }
+.timeline { list-style:none; padding:0; margin:0; border-left:2px solid var(--rule); }
+.timeline li { display:flex; gap:16px; padding:6px 0 6px 16px; }
+.timeline time { color:var(--muted); font-variant-numeric:tabular-nums; min-width:3.5em; }
+.checks { list-style:none; padding:0; } .checks li { margin:6px 0; font-weight:600; }
+.trees { color:var(--muted); }
+code { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-size:.9em; }
+footer { margin-top:56px; padding-top:16px; border-top:1px solid var(--rule); color:var(--muted); font-size:.9rem; }
+@media (max-width:640px) { main { padding:32px 16px; } h1 { font-size:1.7rem; } .size { min-width:140px; } }
+</style></head>
+<body><main>
+<h1>Diffract stack map: monster-pr — Q2 CLI Improvements</h1>
+<p class="verdict">1,158 lines became 7 slices. The largest is 375 lines. Every slice passes its tests on its own. The stack adds up to exactly the original branch.</p>
+<p class="quiet">24 files changed. Split in 6.5 minutes with 0 repairs and 1 verify run.</p>
+<p class="summary">This PR ships 7 Q2 CLI improvements to the click toolkit: tightened typing (R1), user-facing string localisation via gettext (R2), NoSuchCommand suggestions (R3), a new get_pager_file() API (R4), Linux prompt/hidden-input fixes (R5), Fish completion multi-line help (R6), and small targeted fixes (R7). The 96 units are stacked in dependency order — typing first, then features, then docs — so each slice can be reviewed and merged independently.</p>
+<svg class="prism" viewBox="0 0 1000 402" role="img" aria-labelledby="prism-title">
+<title id="prism-title">monster-pr, 1,158 lines, split into 7 slices</title>
+<rect x="24" y="184.0" width="296" height="34" rx="3" class="beam"/>
+<text x="28" y="171.0" class="beam-label">monster-pr</text>
+<text x="28" y="245.0" class="beam-sub">1,158 lines in one PR</text>
+<path d="M 372 192.0 L 560 50.0 L 576 50.0" stroke="hsl(265, 68%, 50%)" stroke-width="11.3" fill="none" stroke-linecap="round"/>
+<text x="584" y="47.0" class="ray-title"><tspan class="ray-number" fill="hsl(265, 68%, 50%)">1</tspan> Tighten Parameter/parser typing (mechanical —…</text>
+<text x="584" y="65.0" class="ray-sub">212 lines, <tspan class="pass">passed</tspan></text>
+<path d="M 372 195.0 L 560 100.3 L 576 100.3" stroke="hsl(222, 68%, 50%)" stroke-width="6.3" fill="none" stroke-linecap="round"/>
+<text x="584" y="97.3" class="ray-title"><tspan class="ray-number" fill="hsl(222, 68%, 50%)">2</tspan> Add NoSuchCommand with name suggestions</text>
+<text x="584" y="115.3" class="ray-sub">119 lines, <tspan class="pass">passed</tspan></text>
+<path d="M 372 198.0 L 560 150.7 L 576 150.7" stroke="hsl(178, 68%, 50%)" stroke-width="4.1" fill="none" stroke-linecap="round"/>
+<text x="584" y="147.7" class="ray-title"><tspan class="ray-number" fill="hsl(178, 68%, 50%)">3</tspan> Localise remaining user-facing strings</text>
+<text x="584" y="165.7" class="ray-sub">76 lines, <tspan class="pass">passed</tspan></text>
+<path d="M 372 201.0 L 560 201.0 L 576 201.0" stroke="hsl(135, 68%, 50%)" stroke-width="10.0" fill="none" stroke-linecap="round"/>
+<text x="584" y="198.0" class="ray-title"><tspan class="ray-number" fill="hsl(135, 68%, 50%)">4</tspan> Add click.get_pager_file() pager API</text>
+<text x="584" y="216.0" class="ray-sub">188 lines, <tspan class="pass">passed</tspan></text>
+<path d="M 372 204.0 L 560 251.3 L 576 251.3" stroke="hsl(92, 68%, 50%)" stroke-width="20.0" fill="none" stroke-linecap="round"/>
+<text x="584" y="248.3" class="ray-title"><tspan class="ray-number" fill="hsl(92, 68%, 50%)">5</tspan> Fix Linux prompt input and hidden-input errors</text>
+<text x="584" y="266.3" class="ray-sub">375 lines, <tspan class="pass">passed</tspan></text>
+<path d="M 372 207.0 L 560 301.7 L 576 301.7" stroke="hsl(48, 68%, 50%)" stroke-width="4.1" fill="none" stroke-linecap="round"/>
+<text x="584" y="298.7" class="ray-title"><tspan class="ray-number" fill="hsl(48, 68%, 50%)">6</tspan> Fix Fish completion multi-line help strings</text>
+<text x="584" y="316.7" class="ray-sub">76 lines, <tspan class="pass">passed</tspan></text>
+<path d="M 372 210.0 L 560 352.0 L 576 352.0" stroke="hsl(5, 68%, 50%)" stroke-width="6.0" fill="none" stroke-linecap="round"/>
+<text x="584" y="349.0" class="ray-title"><tspan class="ray-number" fill="hsl(5, 68%, 50%)">7</tspan> Docs, small fixes, and unrelated changes</text>
+<text x="584" y="367.0" class="ray-sub">112 lines, <tspan class="pass">passed</tspan></text>
+<polygon points="340,115.0 282,263.0 398,263.0" class="glass"/>
+</svg>
+<svg class="prism-compact" viewBox="0 0 640 424" role="img" aria-hidden="true">
+<rect x="12" y="196.0" width="236" height="32" rx="3" class="beam"/>
+<path d="M 292 203.0 L 548 34.0 L 572 34.0" stroke="hsl(265, 68%, 50%)" stroke-width="12.4" fill="none" stroke-linecap="round"/>
+<text x="588" y="45.0" class="ray-number-compact">1</text>
+<path d="M 292 206.0 L 548 93.3 L 572 93.3" stroke="hsl(222, 68%, 50%)" stroke-width="7.0" fill="none" stroke-linecap="round"/>
+<text x="588" y="104.3" class="ray-number-compact">2</text>
+<path d="M 292 209.0 L 548 152.7 L 572 152.7" stroke="hsl(178, 68%, 50%)" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+<text x="588" y="163.7" class="ray-number-compact">3</text>
+<path d="M 292 212.0 L 548 212.0 L 572 212.0" stroke="hsl(135, 68%, 50%)" stroke-width="11.0" fill="none" stroke-linecap="round"/>
+<text x="588" y="223.0" class="ray-number-compact">4</text>
+<path d="M 292 215.0 L 548 271.3 L 572 271.3" stroke="hsl(92, 68%, 50%)" stroke-width="22.0" fill="none" stroke-linecap="round"/>
+<text x="588" y="282.3" class="ray-number-compact">5</text>
+<path d="M 292 218.0 L 548 330.7 L 572 330.7" stroke="hsl(48, 68%, 50%)" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+<text x="588" y="341.7" class="ray-number-compact">6</text>
+<path d="M 292 221.0 L 548 390.0 L 572 390.0" stroke="hsl(5, 68%, 50%)" stroke-width="6.6" fill="none" stroke-linecap="round"/>
+<text x="588" y="401.0" class="ray-number-compact">7</text>
+<polygon points="264,132.0 212,270.0 316,270.0" class="glass"/>
+</svg>
+<ol class="ray-list" aria-label="Slices"><li><span class="dot" style="background:hsl(265, 68%, 50%)"></span><span><b>1</b> Tighten Parameter/parser typing (mechanical — skim)<br><span class="quiet">212 lines, <span class="pass">passed</span></span></span></li><li><span class="dot" style="background:hsl(222, 68%, 50%)"></span><span><b>2</b> Add NoSuchCommand with name suggestions<br><span class="quiet">119 lines, <span class="pass">passed</span></span></span></li><li><span class="dot" style="background:hsl(178, 68%, 50%)"></span><span><b>3</b> Localise remaining user-facing strings<br><span class="quiet">76 lines, <span class="pass">passed</span></span></span></li><li><span class="dot" style="background:hsl(135, 68%, 50%)"></span><span><b>4</b> Add click.get_pager_file() pager API<br><span class="quiet">188 lines, <span class="pass">passed</span></span></span></li><li><span class="dot" style="background:hsl(92, 68%, 50%)"></span><span><b>5</b> Fix Linux prompt input and hidden-input errors<br><span class="quiet">375 lines, <span class="pass">passed</span></span></span></li><li><span class="dot" style="background:hsl(48, 68%, 50%)"></span><span><b>6</b> Fix Fish completion multi-line help strings<br><span class="quiet">76 lines, <span class="pass">passed</span></span></span></li><li><span class="dot" style="background:hsl(5, 68%, 50%)"></span><span><b>7</b> Docs, small fixes, and unrelated changes<br><span class="quiet">112 lines, <span class="pass">passed</span></span></span></li></ol>
+<h2>Worth a look</h2>
+<ul class="look"><li>R4 changes 183 behavioural lines in slices 4, 7 with no test changes</li><li>R2 changes 66 behavioural lines in slice 3 with no test changes</li><li>R1 changes 17 behavioural lines in slices 1, 2 with no test changes</li></ul>
+<h2>Requirements across the stack</h2>
+<p class="quiet">Requirements from q2-release-plan.docx. ● changes code, <sub>T</sub> includes tests, ○ docs only.</p><div class="scroll" tabindex="0" role="region" aria-label="Requirements across the stack"><table class="grid"><thead><tr><th scope="col">Requirement</th><th scope="col" class="num" style="border-top-color:hsl(265, 68%, 50%)">1</th><th scope="col" class="num" style="border-top-color:hsl(222, 68%, 50%)">2</th><th scope="col" class="num" style="border-top-color:hsl(178, 68%, 50%)">3</th><th scope="col" class="num" style="border-top-color:hsl(135, 68%, 50%)">4</th><th scope="col" class="num" style="border-top-color:hsl(92, 68%, 50%)">5</th><th scope="col" class="num" style="border-top-color:hsl(48, 68%, 50%)">6</th><th scope="col" class="num" style="border-top-color:hsl(5, 68%, 50%)">7</th><th scope="col">Coverage</th></tr></thead><tbody><tr><th scope="row"><span class="rid">R1</span> Tighten typing of Parameter names, UNSET sentinel, option parser</th><td class="num" style="color:hsl(265, 68%, 50%)" aria-label="slice 1: code">●</td><td class="num" style="color:hsl(222, 68%, 50%)" aria-label="slice 2: code">●</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num docs" aria-label="slice 7: docs">○</td><td class="warn">no test changes</td></tr><tr><th scope="row"><span class="rid">R2</span> Localise remaining user-facing strings via gettext</th><td class="num"></td><td class="num"></td><td class="num" style="color:hsl(178, 68%, 50%)" aria-label="slice 3: code">●</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num docs" aria-label="slice 7: docs">○</td><td class="warn">no test changes</td></tr><tr><th scope="row"><span class="rid">R3</span> NoSuchCommand error with name suggestions; unknown options same format</th><td class="num"></td><td class="num" style="color:hsl(222, 68%, 50%)" aria-label="slice 2: code and tests">●<sub>T</sub></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="pass">code + tests</td></tr><tr><th scope="row"><span class="rid">R4</span> Add click.get_pager_file() file-like pager API</th><td class="num"></td><td class="num"></td><td class="num"></td><td class="num" style="color:hsl(135, 68%, 50%)" aria-label="slice 4: code">●</td><td class="num"></td><td class="num"></td><td class="num" style="color:hsl(5, 68%, 50%)" aria-label="slice 7: code">●</td><td class="warn">no test changes</td></tr><tr><th scope="row"><span class="rid">R5</span> Fix Linux prompt input; custom error for hidden-input prompts</th><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num" style="color:hsl(92, 68%, 50%)" aria-label="slice 5: code and tests">●<sub>T</sub></td><td class="num"></td><td class="num"></td><td class="pass">code + tests</td></tr><tr><th scope="row"><span class="rid">R6</span> Fish shell completion handles multi-line help strings</th><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num" style="color:hsl(48, 68%, 50%)" aria-label="slice 6: code and tests">●<sub>T</sub></td><td class="num"></td><td class="pass">code + tests</td></tr><tr><th scope="row"><span class="rid">R7</span> Small fixes: FuncParamType ValueError, Windows open_url, deprecation label</th><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num" style="color:hsl(5, 68%, 50%)" aria-label="slice 7: code and tests">●<sub>T</sub></td><td class="pass">code + tests</td></tr></tbody></table></div>
+<h2>Slices, in review order</h2>
+<p class="quiet">Solid bar: behavioural lines to read closely. Faded: mechanical lines to skim. The tick marks the 400-line budget.</p><div class="scroll" tabindex="0" role="region" aria-label="Slices, in review order"><table class="slices"><thead><tr><th scope="col" class="num">#</th><th scope="col">Slice</th><th scope="col">Lines</th><th scope="col" class="num">Files</th><th scope="col">Tests</th></tr></thead><tbody><tr><td class="num"><span class="swatch" style="background:hsl(265, 68%, 50%)"></span>1</td><td><span class="rid">R1</span> <strong>Tighten Parameter/parser typing (mechanical — skim)</strong><p class="note">100% mechanical — skim for unwanted behaviour changes in Parameter/Option/Argument type narrowing and ABC introduction</p><code class="branch">diffract/monster-pr/01-tighten-parameter-parser-typing-mechanic</code></td><td class="size"><span class="count">212</span><div class="bar" role="img" aria-label="212 lines: 0 behavioural, 212 mechanical"><span style="width:0.0%;background:hsl(265, 68%, 50%)"></span><span style="width:53.0%;background:hsl(265, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">7</td><td class="pass">passed</td></tr><tr><td class="num"><span class="swatch" style="background:hsl(222, 68%, 50%)"></span>2</td><td><span class="rid">R3</span> <strong>Add NoSuchCommand with name suggestions</strong><p class="note">Check _format_possibilities suggestion logic and Group.invoke NoSuchCommand wiring; tests included</p><code class="branch">diffract/monster-pr/02-add-nosuchcommand-with-name-suggestions</code></td><td class="size"><span class="count">119</span><div class="bar" role="img" aria-label="119 lines: 117 behavioural, 2 mechanical"><span style="width:29.2%;background:hsl(222, 68%, 50%)"></span><span style="width:0.5%;background:hsl(222, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">6</td><td class="pass">passed</td></tr><tr><td class="num"><span class="swatch" style="background:hsl(178, 68%, 50%)"></span>3</td><td><span class="rid">R2</span> <strong>Localise remaining user-facing strings</strong><p class="note">66 behavioural lines, no tests — verify every string goes through _() and .format() parameters are correct</p><code class="branch">diffract/monster-pr/03-localise-remaining-user-facing-strings</code></td><td class="size"><span class="count">76</span><div class="bar" role="img" aria-label="76 lines: 66 behavioural, 10 mechanical"><span style="width:16.5%;background:hsl(178, 68%, 50%)"></span><span style="width:2.5%;background:hsl(178, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">9</td><td class="pass">passed</td></tr><tr><td class="num"><span class="swatch" style="background:hsl(135, 68%, 50%)"></span>4</td><td><span class="rid">R4</span> <strong>Add click.get_pager_file() pager API</strong><p class="note">183 behavioural lines, no automated tests (pager tests excluded) — review MaybeStripAnsi, _pager_contextmanager, and get_pager_file() manually</p><code class="branch">diffract/monster-pr/04-add-click-get-pager-file-pager-api</code></td><td class="size"><span class="count">188</span><div class="bar" role="img" aria-label="188 lines: 183 behavioural, 5 mechanical"><span style="width:45.8%;background:hsl(135, 68%, 50%)"></span><span style="width:1.2%;background:hsl(135, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">2</td><td class="pass">passed</td></tr><tr><td class="num"><span class="swatch" style="background:hsl(92, 68%, 50%)"></span>5</td><td><span class="rid">R5</span> <strong>Fix Linux prompt input and hidden-input errors</strong><p class="note">Focus on _readline_prompt stdout/stderr redirect logic and _mask_hidden_input regex; 14 test cases included</p><code class="branch">diffract/monster-pr/05-fix-linux-prompt-input-and-hidden-input</code></td><td class="size"><span class="count">375</span><div class="bar" role="img" aria-label="375 lines: 372 behavioural, 3 mechanical"><span style="width:93.0%;background:hsl(92, 68%, 50%)"></span><span style="width:0.8%;background:hsl(92, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">3</td><td class="pass">passed</td></tr><tr><td class="num"><span class="swatch" style="background:hsl(48, 68%, 50%)"></span>6</td><td><span class="rid">R6</span> <strong>Fix Fish completion multi-line help strings</strong><p class="note">Small and well-tested: check the newline-split parsing change in the completion script path</p><code class="branch">diffract/monster-pr/06-fix-fish-completion-multi-line-help-stri</code></td><td class="size"><span class="count">76</span><div class="bar" role="img" aria-label="76 lines: 76 behavioural, 0 mechanical"><span style="width:19.0%;background:hsl(48, 68%, 50%)"></span><span style="width:0.0%;background:hsl(48, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">2</td><td class="pass">passed</td></tr><tr><td class="num"><span class="swatch" style="background:hsl(5, 68%, 50%)"></span>7</td><td><span class="rid">R7</span> <strong>Docs, small fixes, and unrelated changes</strong><p class="note">Three R7 fixes are independent — can be pushed back separately; also contains unrelated .gitignore and File error reformat</p><code class="branch">diffract/monster-pr/07-docs-small-fixes-and-unrelated-changes</code></td><td class="size"><span class="count">112</span><div class="bar" role="img" aria-label="112 lines: 53 behavioural, 59 mechanical"><span style="width:13.2%;background:hsl(5, 68%, 50%)"></span><span style="width:14.8%;background:hsl(5, 68%, 50%);opacity:.35"></span><span class="unsorted" style="width:0.0%"></span><i class="budget" style="left:100.0%"></i></div></td><td class="num">9</td><td class="pass">passed</td></tr></tbody></table></div>
+<h2>How it got here</h2><ol class="timeline"><li><time>0:00</time><span>Parsed 96 units in 24 files</span></li><li><time>4:03</time><span>Planned 7 slices (plan v1)</span></li><li><time>5:50</time><span>Tested 7 slices in parallel (51.9 s); all green</span></li><li><time>6:31</time><span>Proved zero drift</span></li></ol>
+<h2>Proof that nothing was lost</h2><ul class="checks"><li class="pass">✓ The last slice&#x27;s tree equals the original branch&#x27;s tree</li><li class="pass">✓ The slices form one straight chain from the base</li><li class="pass">✓ Every change is in exactly one slice</li></ul><p class="trees">Stack tip tree <code>fa953095f201</code> equals original tree <code>fa953095f201</code>.</p>
+<footer>Every number here comes from git, computed by the Diffract engine; the notes come from Bob.
+Verified with <code>PYTHONPATH=src ~/click-demo-venv/bin/python -m pytest -q -p no:cacheprovider -k &quot;not pager&quot;</code>. Generated 2026-09-27 11:59.</footer>
+</main></body></html>

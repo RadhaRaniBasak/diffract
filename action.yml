@@ -1,0 +1,68 @@
+name: Diffract
+description: Split an oversized pull request into small slices that each pass your tests, and comment the verified plan.
+author: Diffract
+branding:
+  icon: git-pull-request
+  color: green
+inputs:
+  verify:
+    description: Command that builds and tests one slice, run from the slice's own checkout, for example "npm test".
+    required: true
+  setup:
+    description: Optional one-time setup in each slice's checkout, for example "npm ci".
+    required: false
+    default: ""
+  budget:
+    description: Maximum changed lines per slice.
+    required: false
+    default: "400"
+  comment:
+    description: Post the summary as a pull request comment ("true" or "false").
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install the Diffract engine
+      shell: bash
+      run: python -m pip install --quiet "mcp>=1.9,<3"
+    - name: Split, test every slice, prove zero drift
+      shell: bash
+      env:
+        DIFFRACT_VERIFY: ${{ inputs.verify }}
+        DIFFRACT_SETUP: ${{ inputs.setup }}
+        DIFFRACT_BUDGET: ${{ inputs.budget }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        python "$GITHUB_ACTION_PATH/mcp/diffract_auto.py" --repo "$GITHUB_WORKSPACE" \
+          --base "origin/$BASE_REF" --head HEAD --verify "$DIFFRACT_VERIFY" --setup "$DIFFRACT_SETUP" \
+          --budget "$DIFFRACT_BUDGET" --summary "$RUNNER_TEMP/diffract-summary.md"
+        cat "$RUNNER_TEMP/diffract-summary.md" >> "$GITHUB_STEP_SUMMARY"
+    - name: Note when commenting isn't possible
+      if: inputs.comment == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+      shell: bash
+      run: |
+        echo "_Diffract did not comment: pull requests from forks get a read-only token. The plan is in this summary._" >> "$GITHUB_STEP_SUMMARY"
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event.pull_request.number && github.event.pull_request.head.repo.full_name == github.repository
+      continue-on-error: true
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/diffract-summary.md" --edit-last \
+          || gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/diffract-summary.md"
+    - name: Upload the stack map
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: diffract-stack-map
+        path: |
+          ${{ github.workspace }}/.diffract/report.html
+          ${{ github.workspace }}/.diffract/stack.json
+        if-no-files-found: ignore

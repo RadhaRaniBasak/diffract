@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "diffract": {
+      "command": "/ABSOLUTE/PATH/TO/diffract-venv/bin/python",
+      "args": [
+        "/ABSOLUTE/PATH/TO/diffract/mcp/diffract_mcp.py"
+      ],
+      "env": {},
+      "alwaysAllow": [
+        "start_session",
+        "set_requirements",
+        "show_units",
+        "annotate_units",
+        "set_plan",
+        "move_units",
+        "merge_slices",
+        "verify",
+        "probe",
+        "locate",
+        "drift_check",
+        "status",
+        "report"
+      ],
+      "disabled": false
+    }
+  }
+}
