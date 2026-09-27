@@ -31,7 +31,7 @@ action.yml                        GitHub Action that runs automatic mode on pull
 examples/github-workflow.yml      the workflow to copy into a repository
 mcp/smoke_test.py                 end-to-end test on a throwaway repo (no Bob needed)
 demo/                             setup scripts (bash, PowerShell), requirements .docx, sample stack map and run, cover image
-DEMO.md                           demo recipe, measured results, 3-minute video script
+DEMO.md                           demo recipe and measured results
 docs/index.html                   project website (single file; see Website below)
 bob-config/mcp_settings.example.json
 .github/workflows/smoke.yml       runs the smoke test on mcp 1.x and 2.x
