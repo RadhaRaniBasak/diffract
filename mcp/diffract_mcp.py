@@ -3,6 +3,7 @@
 import asyncio
 import fnmatch
 import hashlib
+import contextlib
 import json
 import math
 import os
@@ -1179,6 +1180,9 @@ def _publish_gitlab(root: Path, s: dict, stack: list[dict], base: str, bodies: d
                 "note": "Show these to the user; call publish(dry_run=False, bodies=...) only after approval."}
     if not shutil.which("glab"):
         raise DiffractError("GitLab CLI `glab` not found on PATH (install it and run `glab auth login`).")
+    proof = drift_check(str(root))
+    if not proof.get("zero_drift", proof["statement"].startswith("ZERO DRIFT")):
+        raise DiffractError("Drift detected: the stack tip does not match the PR head. Not publishing.")
     push = subprocess.run(push_cmd, cwd=root, capture_output=True, text=True)
     if push.returncode != 0:
         raise DiffractError(f"git push failed: {push.stderr.strip()}")
@@ -1196,14 +1200,18 @@ def _publish_gitlab(root: Path, s: dict, stack: list[dict], base: str, bodies: d
                                  "-f", f"source_branch={entry['branch']}", "-f", f"target_branch={targets[number]}",
                                  "-f", f"title={titles[number]}", "-f", f"description={bodies.get(str(number), entry['title'])}")
             iids[number], urls[number] = created["iid"], created["web_url"]
-    statement = drift_check(str(root))["statement"]
+    statement = proof["statement"]
+    description_problems: list[str] = []
     for entry in stack:
         number = entry["slice"]
         table = "\n".join(f"{j}. {'**' if j == number else ''}[{stack[j - 1]['title']}]({urls[j]})"
                           f"{'** (this merge request)' if j == number else ''}" for j in range(1, total + 1))
         description = (f"{bodies.get(str(number), entry['title'])}\n\n---\n**Stack: review and merge in order.**\n{table}"
                        f"\n\n_Split with Diffract. {statement}_")
-        _glab_json(root, "--method", "PUT", f"projects/:fullpath/merge_requests/{iids[number]}", "-f", f"description={description}")
+        try:
+            _glab_json(root, "--method", "PUT", f"projects/:fullpath/merge_requests/{iids[number]}", "-f", f"description={description}")
+        except DiffractError as error:
+            description_problems.append(f"merge request {number}: description not updated: {error}")
     posted, problems = [], []
     if status_checks:
         gitlab_states = {"success": "success", "failure": "failed", "pending": "pending"}
@@ -1222,6 +1230,8 @@ def _publish_gitlab(root: Path, s: dict, stack: list[dict], base: str, bodies: d
     _save(root, s)
     result: dict[str, Any] = {"dry_run": False, "forge": "gitlab",
                               "merge_requests": [{"slice": k, "url": u} for k, u in sorted(urls.items())]}
+    if description_problems:
+        result["description_problems"] = description_problems
     if status_checks:
         result["status_checks"] = posted
         if problems:
@@ -2045,6 +2055,9 @@ def publish(
                 "note": "Show these to the user; call publish(dry_run=False, bodies=...) only after approval."}
     if not shutil.which("gh"):
         raise DiffractError("GitHub CLI `gh` not found on PATH (install it and run `gh auth login`).")
+    proof = drift_check(str(root))
+    if not proof.get("zero_drift", proof["statement"].startswith("ZERO DRIFT")):
+        raise DiffractError("Drift detected: the stack tip does not match the PR head. Not publishing.")
     push = subprocess.run(push_cmd, cwd=root, capture_output=True, text=True)
     if push.returncode != 0:
         raise DiffractError(f"git push failed: {push.stderr.strip()}")
@@ -2057,8 +2070,11 @@ def publish(
                               cwd=root, capture_output=True, text=True)
         if view.returncode == 0 and view.stdout.strip():
             urls[o["slice"]] = view.stdout.strip()
-            subprocess.run(["gh", "pr", "edit", urls[o["slice"]], "--base", prev, "--title", title],
-                           cwd=root, capture_output=True, text=True)
+            retarget = subprocess.run(["gh", "pr", "edit", urls[o["slice"]], "--base", prev, "--title", title],
+                                      cwd=root, capture_output=True, text=True)
+            if retarget.returncode != 0:
+                raise DiffractError(f"gh pr edit failed for slice {o['slice']}: could not point the existing PR "
+                                    f"at {prev}: {(retarget.stderr or retarget.stdout).strip()}")
             continue
         args = ["gh", "pr", "create", "--base", prev, "--head", o["branch"], "--title", title, "--body", body]
         if draft:
@@ -2067,17 +2083,23 @@ def publish(
         if r.returncode != 0:
             raise DiffractError(f"gh pr create failed for slice {o['slice']}: {r.stderr.strip()}")
         urls[o["slice"]] = r.stdout.strip().splitlines()[-1]
-    cert = drift_check(str(root))["statement"]
+    cert = proof["statement"]
+    description_problems: list[str] = []
     for o in stack:
         k = o["slice"]
         table = "\n".join(f"{j}. {'**' if j == k else ''}[{stack[j - 1]['title']}]({urls[j]}){'** ← this PR' if j == k else ''}"
                           for j in range(1, K + 1))
-        full = (f"{bodies.get(str(k), o['title'])}\n\n---\n**Stack — review and merge in order:**\n{table}\n\n"
+        full = (f"{bodies.get(str(k), o['title'])}\n\n---\n**Stack: review and merge in order.**\n{table}\n\n"
                 f"_Split with Diffract. {cert}_")
         with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as tf:
             tf.write(full)
-        subprocess.run(["gh", "pr", "edit", urls[k], "--body-file", tf.name], cwd=root, capture_output=True, text=True)
-        os.unlink(tf.name)
+        try:
+            edit = subprocess.run(["gh", "pr", "edit", urls[k], "--body-file", tf.name], cwd=root, capture_output=True, text=True)
+        finally:
+            with contextlib.suppress(OSError):
+                os.unlink(tf.name)
+        if edit.returncode != 0:
+            description_problems.append(f"slice {k}: description not updated: {(edit.stderr or edit.stdout).strip()[:200]}")
     posted, problems = [], []
     if status_checks:
         posted, problems = _post_statuses(root, statuses)
@@ -2085,6 +2107,8 @@ def publish(
     _event(s, "publish", urls=urls)
     _save(root, s)
     result: dict[str, Any] = {"dry_run": False, "prs": [{"slice": k, "url": u} for k, u in sorted(urls.items())]}
+    if description_problems:
+        result["description_problems"] = description_problems
     if status_checks:
         result["status_checks"] = posted
         if problems:

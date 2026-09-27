@@ -129,9 +129,9 @@ Copy `examples/github-workflow.yml` into the target repository's `.github/workfl
 
 ## Windows
 
-- **Engine:** every file read and write uses UTF-8, commands run through `cmd`, test processes are stopped with `taskkill`, and shared folders fall back to junctions. The smoke test avoids OS-specific behaviour, and CI runs it on Windows, macOS and Linux.
+- **Engine:** every file read and write uses UTF-8, commands run through `cmd`, test processes are stopped with `taskkill`, and shared folders fall back to junctions. The smoke test avoids OS-specific behaviour.
 - **Demo setup:** use `powershell -ExecutionPolicy Bypass -File demo\setup_click_demo.ps1`.
-- **Status:** Windows hasn't been verified on a real machine yet, so check the first CI run.
+- **Status:** the smoke test passes on Linux and on an Intel Mac. Windows hasn't been verified on a real machine yet.
 
 ## Troubleshooting
 
@@ -145,5 +145,5 @@ Copy `examples/github-workflow.yml` into the target repository's `.github/workfl
   it `flaky` rather than moving code around.
 - **Worktree disk usage:** worktrees live in `~/.cache/diffract/worktrees/`
   (override with `DIFFRACT_WORKTREE_ROOT`). `cleanup` removes them.
-- **Platforms:** tested on Linux with Python 3.12, git 2.43, and mcp 1.30 and 2.2. CI runs the same
-  smoke test on Windows and macOS; check that run before relying on either.
+- **Platforms:** tested on Linux (Python 3.12, git 2.43, mcp 1.30 and 2.2) and on an Intel Mac
+  (Python 3.14, mcp 2.2). Windows hasn't been tested yet.

@@ -257,6 +257,7 @@ async def main() -> None:
         print("  (skipped on Windows: the stand-in gh is a script)")
     else:
         await publish_for_real()
+        await publish_failures()
         await publish_to_gitlab()
 
     print("\n13. automatic mode (what the GitHub Action runs)")
@@ -292,10 +293,19 @@ entry = {{"args": args}}
 if args[:2] == ["repo", "view"]:
     print("acme/shop")
 elif args[:2] == ["pr", "view"]:
-    sys.exit(1)
+    if os.environ.get("FAKE_GH_EXISTING"):
+        print("https://github.com/acme/shop/pull/7")
+    else:
+        sys.exit(1)
 elif args[:2] == ["pr", "create"]:
     created = sum(1 for line in open(log) if '"create"' in line) if os.path.exists(log) else 0
     print(f"https://github.com/acme/shop/pull/{{101 + created}}")
+elif args[:2] == ["pr", "edit"] and "--base" in args and os.environ.get("FAKE_GH_FAIL_RETARGET"):
+    sys.stderr.write("GraphQL: base branch not found")
+    sys.exit(1)
+elif args[:2] == ["pr", "edit"] and "--body-file" in args and os.environ.get("FAKE_GH_FAIL_EDIT"):
+    sys.stderr.write("HTTP 502: server error")
+    sys.exit(1)
 elif args[:2] == ["pr", "edit"] and "--body-file" in args:
     entry["body"] = open(args[args.index("--body-file") + 1]).read()
 with open(log, "a") as handle:
@@ -377,6 +387,31 @@ async def publish_to_gitlab() -> None:
     check(len(statuses) == 8 and all("state=success" in c for c in statuses), "GitLab: 8 green commit statuses posted")
     described = [c for c in calls if "PUT" in c and any(a.startswith("description=") and "review and merge in order" in a for a in c)]
     check(len(described) == 4, "GitLab: every merge request description carries the stack table")
+
+
+async def publish_failures() -> None:
+    fake_bin = TMP / "fake-bin"
+    saved_path = os.environ["PATH"]
+    os.environ.update(PATH=f"{fake_bin}{os.pathsep}{saved_path}", FAKE_GH_FAIL_EDIT="1")
+    try:
+        out = d.publish(dry_run=False)
+    finally:
+        os.environ["PATH"] = saved_path
+        os.environ.pop("FAKE_GH_FAIL_EDIT", None)
+    check(len(out.get("description_problems", [])) == 4 and len(out["prs"]) == 4,
+          "failed PR description updates are reported, not silently ignored")
+    os.environ.update(PATH=f"{fake_bin}{os.pathsep}{saved_path}", FAKE_GH_EXISTING="1", FAKE_GH_FAIL_RETARGET="1")
+    retarget_error = ""
+    try:
+        d.publish(dry_run=False)
+    except d.DiffractError as error:
+        retarget_error = str(error)
+    finally:
+        os.environ["PATH"] = saved_path
+        for key in ("FAKE_GH_EXISTING", "FAKE_GH_FAIL_RETARGET"):
+            os.environ.pop(key, None)
+    check("could not point the existing PR" in retarget_error,
+          "a failed re-target of an existing PR stops publishing with a clear error")
 
 
 async def mcp_roundtrip() -> None:
